@@ -4,6 +4,6 @@ export class CFusionLog {
   constructor(
     public logType: LogType,
     public message: string,
-    public cause?: string[]
+    public cause?: string
   ) {}
 }
