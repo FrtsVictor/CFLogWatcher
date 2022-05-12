@@ -1,15 +1,15 @@
 import events from 'events';
 import fs from 'fs';
 import readLine from 'readline';
-import { PATTERNS, TOTAL_ERRORS, LOG_FILE_TYPE } from './consts';
+import { PATTERNS, LOG_FILE_TYPE } from './consts';
 import { ColdFusionExceptionLog } from './models/cold-fusion-exception-log.model';
-import { LogType } from './models/log-name.enum';
+import { LogType } from './models/log-type.enum';
 import { getOsLogsDir } from './utils/os.util';
 import { customLog } from './utils/custom-log';
 import { LOG_COLORS } from './utils/log-colors';
 import { IColdFusionLogReader } from './cold-fusion-log-reader.interface';
 import { ColdFusionInformationLog } from './models/cold-fusion-information-log';
-import { ColdFusionLogBase } from './models/cold-fusion-log-base.model';
+import { ColdFusionLogFactory } from './factory/cold-fusion-log-factory';
 
 export class ColdFusionLogReader implements IColdFusionLogReader {
   #readLine: readLine.Interface = null!;
@@ -29,7 +29,8 @@ export class ColdFusionLogReader implements IColdFusionLogReader {
     fs.watchFile(filePath, async () => {
       this.#createReadLineByFilePath(filePath);
       const logs = await this.#getLogs(errorLogType);
-      customLog(logColor, logs[logs.length - 1]);
+      const lastItem = logs[logs.length - 1];
+      customLog(logColor, lastItem);
 
       await events.once(this.#readLine, 'close');
     });
@@ -68,27 +69,27 @@ export class ColdFusionLogReader implements IColdFusionLogReader {
 
   async #getExceptionLog(line: string, logList: ColdFusionExceptionLog[]) {
     if (this.#isLogMessage(line)) {
-      const coldFusionExceptionLog = new ColdFusionExceptionLog(line, []);
-      logList.push(coldFusionExceptionLog);
+      const exceptionLog = ColdFusionLogFactory.create(LogType.EXCEPTION, line);
+      logList.push(exceptionLog as ColdFusionExceptionLog);
     }
 
-    if (this.#isCausedByLine(line)) {
-      const lastIndex = logList.length - 1;
-      logList[lastIndex].cause.push(line);
-    }
+    if (this.#isCausedByLine(line)) logList[logList.length - 1].cause = line;
   }
 
-  async #getInformationLogs(line: string, logList: ColdFusionInformationLog[]) {
+  async #getInformationLogs(
+    line: string,
+    logList: ColdFusionInformationLog[],
+    logType: LogType
+  ) {
     if (this.#isLogMessage(line)) {
-      const coldFusionInformationLog = new ColdFusionInformationLog(
-        LogType.REST_SERVICE,
-        line
-      );
-      logList.push(coldFusionInformationLog);
+      const informationLog = ColdFusionLogFactory.create(logType, line);
+      logList.push(informationLog);
     }
   }
 
-  async #getLogs(logType: LogType): Promise<ColdFusionLogBase[]> {
+  async #getLogs(
+    logType: LogType
+  ): Promise<ColdFusionExceptionLog[] | ColdFusionInformationLog[]> {
     return new Promise((resolve, reject) => {
       const logList: ColdFusionExceptionLog[] | ColdFusionInformationLog = [];
 
@@ -96,13 +97,14 @@ export class ColdFusionLogReader implements IColdFusionLogReader {
       this.#readLine
         .on('line', (line) => {
           switch (logType) {
-            case LogType.EXCEPTION:
-              this.#getExceptionLog(line, logList);
-            case LogType.REST_SERVICE:
-            case LogType.SERVER:
-              this.#getInformationLogs(line, logList);
+              case LogType.EXCEPTION:
+                this.#getExceptionLog(line, logList);
+              case LogType.MY_LOGS:
+              case LogType.REST_SERVICE:
+              case LogType.SERVER:            
+                this.#getInformationLogs(line, logList, logType);
           }
-        })
+        })  
         .on('close', () => {
           resolve(logList);
         })
