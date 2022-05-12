@@ -1,5 +1,6 @@
 export enum LogType {
   EXCEPTION = 'exception',
   REST_SERVICE = 'restservice',
-  SERVER = 'server'
+  SERVER = 'server',
+  MY_LOGS = 'my-logs'
 }

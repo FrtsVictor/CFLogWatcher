@@ -97,13 +97,14 @@ export class ColdFusionLogReader implements IColdFusionLogReader {
       this.#readLine
         .on('line', (line) => {
           switch (logType) {
-            case LogType.EXCEPTION:
-              this.#getExceptionLog(line, logList);
-            case LogType.REST_SERVICE:
-            case LogType.SERVER:
-              this.#getInformationLogs(line, logList, logType);
+              case LogType.EXCEPTION:
+                this.#getExceptionLog(line, logList);
+              case LogType.MY_LOGS:
+              case LogType.REST_SERVICE:
+              case LogType.SERVER:            
+                this.#getInformationLogs(line, logList, logType);
           }
-        })
+        })  
         .on('close', () => {
           resolve(logList);
         })

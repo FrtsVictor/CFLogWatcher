@@ -9,6 +9,7 @@ export class ColdFusionLogFactory {
       case LogType.EXCEPTION:
         return new ColdFusionExceptionLog(message);
       case LogType.REST_SERVICE:
+      case LogType.MY_LOGS:
       case LogType.SERVER:
         return new ColdFusionInformationLog(logType, message);
       default:

@@ -10,6 +10,11 @@ import { ColdFusionLogReader } from './reader';
   );
 
   await new ColdFusionLogReader().startReaderByErrorType(
+    LogType.MY_LOGS,
+    LOG_COLORS.text.red
+  );
+
+  await new ColdFusionLogReader().startReaderByErrorType(
     LogType.REST_SERVICE,
     LOG_COLORS.text.yellow
   );
